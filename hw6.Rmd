@@ -1,0 +1,44 @@
+---
+title: "hw6"
+author: "Han Sun"
+date: "2020.4.21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+```
+
+```{r}
+df1 <- readxl::read_xlsx('KIB - Best in Show (public).xlsx', sheet = 'Best in show', skip = 5)
+df1clean <- df1[-c(1,174:184),] %>%
+  rename("popularity" = "popularity ranking (1-173, 1 = most popular)") %>%
+  select("Dog breed","category","size category", "popularity","intelligence ranking","intelligence category")
+df2 <- readxl::read_xlsx('KIB - Best in Show (public).xlsx', sheet = 'Best in show full sheet', skip = 2)
+df2clean <- df2[-1,] %>% 
+  rename("Dog breed" = "Sources - see bottom right") %>%
+  rename("popularity" = "POPULARITY IN US...6") %>%
+  rename("intelligence ranking" = "1 INTELLIGENCE (TRAINABILITY) ranking") %>%
+  select("Dog breed","category","size category", "datadog score", "popularity","intelligence ranking","intelligence category")
+```
+
+```{r}
+topdog <- merge(df1clean, df2clean, by=c("Dog breed","category","size category", "popularity","intelligence ranking","intelligence category"))
+topdog$popularity = as.numeric(topdog$popularity)
+topdog$`intelligence ranking` = as.numeric(topdog$`intelligence ranking`)  
+topdog$`size category` = as.factor(topdog$`size category`)
+topdog$`size category` = factor(topdog$`size category`,levels = c("small", "medium", "large"))
+topdog$`intelligence category`[topdog$`intelligence category` == "no data"] <- NA
+```
+
+```{r,fig.width=20, fig.height=10}
+topdog %>% ggplot(aes(x = `datadog score`, y = popularity)) + 
+  geom_point(aes(color = category, shape = `intelligence category`, size = `size category`)) +
+  geom_hline(yintercept = 86) + 
+  geom_vline(xintercept = 2.3) +
+  geom_text_repel(aes(label = `Dog breed`))
+```
+
